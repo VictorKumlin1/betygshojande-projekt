@@ -1,16 +1,13 @@
 const express = require('express');
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
-const db = require('./db'); // Lägg till den här raden för att inkludera db.js
-
+const databas = require('./databas'); x
 
 const app = express();
 
-// Konfigurera Handlebars som templating-motor
 app.engine('handlebars', exphbs.engine({ defaultLayout: 'main' }));
 app.set('view engine', 'handlebars');
 
-// Middleware för att hantera POST-data
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // Serva huvudsidan
@@ -26,10 +23,9 @@ app.get('/register', (req, res) => {
 // Hantera registreringsdata
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
-  // Här kan du lägga till logik för att spara användardata till en databas
   console.log(`Username: ${username}, Password: ${password}`);
   res.send('Registrering lyckades!');
-  db.addUser(username, password);
+  databas.addUser(username, password);
 
 
 });
@@ -42,12 +38,10 @@ app.get('/login', (req, res) => {
 // Hantera inloggningsdata
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
-  // Här kan du lägga till logik för att verifiera användardata
-  console.log(`Username: ${username}, Password: ${password}`);
+  console.log(`Username: ${username}`);
   res.send('Inloggning lyckades!');
 });
 
-// Starta servern
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Servern kör på http://localhost:${PORT}`);
