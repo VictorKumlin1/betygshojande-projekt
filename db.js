@@ -16,10 +16,9 @@ connection.connect((err) => {
     console.log('Ansluten till databasen');
 });
 
-// Funktion för att skapa en hash av ett lösenord
 async function hashPassword(password) {
     try {
-        const saltRounds = 10; // Antal salt rundor för bcrypt
+        const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         return hashedPassword;
     } catch (error) {
@@ -27,7 +26,6 @@ async function hashPassword(password) {
     }
 }
 
-// Funktion för att lägga till användare i databasen
 async function addUser(username, password) {
     try {
         const hashedPassword = await hashPassword(password);
@@ -44,8 +42,30 @@ async function addUser(username, password) {
     }
 }
 
-
+async function login(username, password) {
+    return new Promise((resolve, reject) => {
+        try {
+            const sql = "SELECT * FROM users WHERE username = ?";
+            connection.query(sql, [username], async (error, results, fields) => {
+                if (error) {
+                    reject(new Error('Fel vid inloggning:', error));
+                    return;
+                }
+                if (results.length > 0) {
+                    const user = results[0];
+                    const passwordMatch = await bcrypt.compare(password, user.password);
+                    resolve({ success: passwordMatch, user });
+                } else {
+                    resolve({ success: false });
+                }
+            });
+        } catch (error) {
+            reject(new Error('Fel vid inloggning:', error));
+        }
+    });
+}
 
 module.exports = {
     addUser,
+    login
 };
