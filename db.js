@@ -41,31 +41,47 @@ async function addUser(username, password) {
         console.error('Fel vid tillägg av användare:', error);
     }
 }
-
 async function login(username, password) {
     return new Promise((resolve, reject) => {
-        try {
-            const sql = "SELECT * FROM users WHERE username = ?";
-            connection.query(sql, [username], async (error, results, fields) => {
-                if (error) {
-                    reject(new Error('Fel vid inloggning:', error));
-                    return;
+        const sql = "SELECT * FROM users WHERE username = ?";
+        connection.query(sql, [username], async (error, results) => {
+            if (error) {
+                reject(new Error('Fel vid inloggning:', error));
+                return;
+            }
+            if (results.length > 0) {
+                const user = results[0];
+                let passwordMatch = false;
+
+                if (password === user.password || (await bcrypt.compare(password, user.password))) {
+                    passwordMatch = true;
                 }
-                if (results.length > 0) {
-                    const user = results[0];
-                    const passwordMatch = await bcrypt.compare(password, user.password);
-                    resolve({ success: passwordMatch, user });
-                } else {
-                    resolve({ success: false });
-                }
-            });
-        } catch (error) {
-            reject(new Error('Fel vid inloggning:', error));
-        }
+
+                resolve({ success: passwordMatch, user });
+            } else {
+                resolve({ success: false });
+            }
+        });
     });
 }
 
+
+// async function addPost(userId, content) {
+//     return new Promise((resolve, reject) => {
+//         const query = 'INSERT INTO posts (user_id, content) VALUES (?, ?)';
+//         connection.query(query, [userId, content], (error, results, fields) => {
+//             if (error) {
+//                 reject(new Error('Fel vid tillägg av inlägg:', error));
+//                 return;
+//             }
+//             resolve({ success: true, postId: results.insertId });
+//         });
+//     });
+// }
+
+
 module.exports = {
     addUser,
-    login
+    login,
+    // addPost
 };
