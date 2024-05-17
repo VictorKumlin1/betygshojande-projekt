@@ -1,7 +1,7 @@
 const express = require('express');
 const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
-const databas = require('./databas'); x
+const databas = require('./databas');
 
 const app = express();
 
@@ -10,36 +10,37 @@ app.set('view engine', 'handlebars');
 
 app.use(bodyParser.urlencoded({ extended: false }));
 
-// Serva huvudsidan
 app.get('/', (req, res) => {
   res.render('home', { title: 'Välkommen' });
 });
 
-// Serva register-sidan
 app.get('/register', (req, res) => {
   res.render('register', { title: 'Registrering' });
 });
 
-// Hantera registreringsdata
 app.post('/register', (req, res) => {
   const { username, password } = req.body;
   console.log(`Username: ${username}, Password: ${password}`);
   res.send('Registrering lyckades!');
   databas.addUser(username, password);
 
-
 });
 
-// Serva login-sidan
-app.get('/login', (req, res) => {
-  res.render('login', { title: 'Logga in' });
-});
 
-// Hantera inloggningsdata
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   console.log(`Username: ${username}`);
-  res.send('Inloggning lyckades!');
+  try {
+    const loginResult = await databas.login(username, password);
+    if (loginResult.success) {
+      res.send('Inloggning lyckades!');
+    } else {
+      res.send('Inloggning misslyckades');
+    }
+  } catch (error) {
+    console.error('Fel vid inloggning:', error);
+    res.status(500).send('Serverfel');
+  }
 });
 
 const PORT = 3000;
