@@ -41,6 +41,7 @@ async function addUser(username, password) {
         console.error('Fel vid tillägg av användare:', error);
     }
 }
+
 async function login(username, password) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM users WHERE username = ?";
@@ -64,24 +65,23 @@ async function login(username, password) {
         });
     });
 }
-
-
-// async function addPost(userId, content) {
-//     return new Promise((resolve, reject) => {
-//         const query = 'INSERT INTO posts (user_id, content) VALUES (?, ?)';
-//         connection.query(query, [userId, content], (error, results, fields) => {
-//             if (error) {
-//                 reject(new Error('Fel vid tillägg av inlägg:', error));
-//                 return;
-//             }
-//             resolve({ success: true, postId: results.insertId });
-//         });
-//     });
-// }
+async function addPost(username, content) {
+    return new Promise((resolve, reject) => {
+        const query = 'INSERT INTO posts (username, content) VALUES (?, ?)';
+        connection.query(query, [username, content], (error, results, fields) => {
+            if (error) {
+                console.error('Fel vid tillägg av inlägg:', error);
+                reject(new Error('Fel vid tillägg av inlägg: ' + error.message));
+                return;
+            }
+            resolve({ success: true, postId: results.insertId });
+        });
+    });
+}
 
 
 module.exports = {
     addUser,
     login,
-    // addPost
+    addPost
 };
