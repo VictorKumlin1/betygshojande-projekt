@@ -16,7 +16,6 @@ app.use(session({
   secret: 'din hemliga nyckel',
   resave: false,
   saveUninitialized: false,
-
 }));
 
 app.get('/', (req, res) => {
@@ -26,6 +25,7 @@ app.get('/', (req, res) => {
 app.get('/register', (req, res) => {
   res.render('register', { title: 'Registrering' });
 });
+
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   console.log(`Username: ${username}, Password: ${password}`);
@@ -40,12 +40,10 @@ app.post('/register', async (req, res) => {
   }
 });
 
-// Serva login-sidan
 app.get('/login', (req, res) => {
   res.render('login', { title: 'Logga in' });
 });
 
-// Hantera inloggningsdata
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
   console.log(`Username: ${username}`);
@@ -66,22 +64,27 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Serva posts-sidan
-app.get('/posts', (req, res) => {
-  res.render('posts', { title: 'Inlägg' });
+app.get('/posts', async (req, res) => {
+  try {
+    const posts = await databas.getPosts();
+    res.render('posts', { title: 'Inlägg', posts });
+  } catch (error) {
+    console.error('Fel vid hämtning av inlägg:', error);
+    res.status(500).send('Serverfel vid hämtning av inlägg');
+  }
 });
 
 app.post('/posts', (req, res) => {
   const { content } = req.body;
   console.log('Session innan post skapande:', req.session);
-  const username = req.session.username; // Använd username från sessionen
+  const username = req.session.username;
   if (!username) {
     return res.status(401).send('Du måste vara inloggad för att skapa ett inlägg.');
   }
   console.log(`Skapar inlägg för användare: ${username}, Innehåll: ${content}`);
   databas.addPost(username, content)
     .then(() => {
-      res.send('Inlägg sparat');
+      res.redirect('/posts');
     })
     .catch(error => {
       console.error('Fel vid tillägg av inlägg:', error);
@@ -89,7 +92,13 @@ app.post('/posts', (req, res) => {
     });
 });
 
-
+app.get('/users', (req, res) => {
+  const username = req.session.username;
+  if (!username) {
+    return res.redirect('/login');
+  }
+  res.render('users', { title: 'Ditt konto', username });
+});
 
 const PORT = 3000;
 app.listen(PORT, () => {
