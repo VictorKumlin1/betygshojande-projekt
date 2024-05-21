@@ -65,6 +65,7 @@ async function login(username, password) {
         });
     });
 }
+
 async function addPost(username, content) {
     return new Promise((resolve, reject) => {
         const query = 'INSERT INTO posts (username, content) VALUES (?, ?)';
@@ -79,9 +80,23 @@ async function addPost(username, content) {
     });
 }
 
+async function getPosts() {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM posts ORDER BY created_at DESC';
+        connection.query(query, (error, results) => {
+            if (error) {
+                console.error('Fel vid hämtning av inlägg:', error);
+                reject(new Error('Fel vid hämtning av inlägg: ' + error.message));
+                return;
+            }
+            resolve(results);
+        });
+    });
+}
 
 module.exports = {
     addUser,
     login,
-    addPost
+    addPost,
+    getPosts
 };
