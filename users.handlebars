@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="sv">
 
 <head>
     <meta charset="UTF-8">
@@ -10,10 +10,35 @@
 <body>
     <h1>{{title}}</h1>
     <p>Välkommen, {{username}}!</p>
-    <p>Ändra användarnamn</p>
-    <p>Ändra lösenord</p>
-    <p>Dina posts:</p>
+    <h2>Ändra användarnamn</h2>
+    <form action="/change-username" method="POST">
+        <input type="text" name="newUsername" placeholder="Nytt användarnamn">
+        <button type="submit">Ändra användarnamn</button>
+    </form>
+
+    <h2>Ändra lösenord</h2>
+    <form action="/change-password" method="POST">
+        <input type="password" name="newPassword" placeholder="Nytt lösenord">
+        <button type="submit">Ändra lösenord</button>
+    </form>
+    <h1>Dina tidigare posts:</h1>
+    {{#if posts.length}}
+    <ul>
+        {{#each posts}}
+        <li>
+            <strong>{{this.username}}</strong>: {{this.content}} <br>
+            <small>Postad: {{this.time}}</small>
+        </li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>Du har inte postat något.</p>
+    {{/if}}
     <a href="/posts">Tillbaka till inlägg</a>
+
+    <form action="/logout" method="POST" style="margin-top: 20px;">
+        <button type="submit">Logga ut</button>
+    </form>
 </body>
 
 </html>
