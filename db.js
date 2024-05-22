@@ -1,6 +1,7 @@
 const mysql = require('mysql');
 const bcrypt = require("bcrypt");
 
+
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -82,7 +83,7 @@ async function addPost(username, content) {
 
 async function getPosts() {
     return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM posts ORDER BY created_at DESC';
+        const query = 'SELECT * FROM posts ORDER BY time DESC';
         connection.query(query, (error, results) => {
             if (error) {
                 console.error('Fel vid hämtning av inlägg:', error);
@@ -93,10 +94,58 @@ async function getPosts() {
         });
     });
 }
+async function getPostsByUser(username) {
+    return new Promise((resolve, reject) => {
+        const query = 'SELECT * FROM posts WHERE username = ? ORDER BY time DESC';
+        connection.query(query, [username], (error, results) => {
+            if (error) {
+                console.error('Fel vid hämtning av användarens inlägg:', error);
+                reject(new Error('Fel vid hämtning av användarens inlägg: ' + error.message));
+                return;
+            }
+            resolve(results);
+        });
+    });
+}
+async function updateUsername(oldUsername, newUsername) {
+    return new Promise((resolve, reject) => {
+        const query = 'UPDATE users SET username = ? WHERE username = ?';
+        connection.query(query, [newUsername, oldUsername], (error, results) => {
+            if (error) {
+                console.error('Fel vid uppdatering av användarnamn:', error);
+                reject(new Error('Fel vid uppdatering av användarnamn: ' + error.message));
+                return;
+            }
+            resolve(results);
+        });
+    });
+}
 
+async function updatePassword(username, newPassword) {
+    try {
+        const hashedPassword = await hashPassword(newPassword);
+        return new Promise((resolve, reject) => {
+            const query = 'UPDATE users SET password = ? WHERE username = ?';
+            connection.query(query, [hashedPassword, username], (error, results) => {
+                if (error) {
+                    console.error('Fel vid uppdatering av lösenord:', error);
+                    reject(new Error('Fel vid uppdatering av lösenord: ' + error.message));
+                    return;
+                }
+                resolve(results);
+            });
+        });
+    } catch (error) {
+        console.error('Fel vid hashning av lösenord:', error);
+        throw new Error('Fel vid hashning av lösenord: ' + error.message);
+    }
+}
 module.exports = {
     addUser,
     login,
     addPost,
-    getPosts
+    getPosts,
+    getPostsByUser,
+    updateUsername,
+    updatePassword
 };
