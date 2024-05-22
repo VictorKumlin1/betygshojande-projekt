@@ -3,7 +3,6 @@ const exphbs = require('express-handlebars');
 const bodyParser = require('body-parser');
 const databas = require('./databas');
 const session = require('express-session');
-const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -28,7 +27,6 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
-  console.log(`Username: ${username}, Password: ${password}`);
   try {
     await databas.addUser(username, password);
     req.session.username = username;
@@ -92,12 +90,66 @@ app.post('/posts', (req, res) => {
     });
 });
 
-app.get('/users', (req, res) => {
+
+app.get('/users', async (req, res) => {
   const username = req.session.username;
   if (!username) {
-    return res.redirect('/login');
+    return res.redirect('/login'); // Om användaren inte är inloggad, omdirigera till inloggningssidan
   }
-  res.render('users', { title: 'Ditt konto', username });
+
+  try {
+    const userPosts = await databas.getPostsByUser(username);
+    res.render('users', { title: 'Ditt konto', username, posts: userPosts });
+  } catch (error) {
+    console.error('Fel vid hämtning av användarens inlägg:', error);
+    res.status(500).send('Serverfel vid hämtning av användarens inlägg');
+  }
+});
+
+app.post('/logout', (req, res) => {
+  // Rensa sessionen
+  req.session.destroy(err => {
+    if (err) {
+      console.error('Fel vid utloggning:', err);
+      res.status(500).send('Serverfel vid utloggning');
+      return;
+    }
+    res.redirect('/');
+  });
+});
+
+app.post('/change-username', async (req, res) => {
+  const { newUsername } = req.body;
+  const username = req.session.username;
+  if (!username) {
+    return res.status(401).send('Du måste vara inloggad för att ändra användarnamn.');
+  }
+  try {
+    await databas.updateUsername(username, newUsername);
+    req.session.username = newUsername; // Uppdatera sessionens användarnamn
+    res.redirect('/users'); // Omdirigera till användarens sida efter ändring av användarnamn
+  } catch (error) {
+    console.error('Fel vid ändring av användarnamn:', error);
+    res.status(500).send('Serverfel vid ändring av användarnamn');
+  }
+});
+
+app.post('/change-password', async (req, res) => {
+  const { newPassword } = req.body;
+  console.log('Nytt lösenord:', newPassword);
+
+  const username = req.session.username;
+  if (!username) {
+    return res.status(401).send('Du måste vara inloggad för att ändra lösenord.');
+  }
+  try {
+    await databas.updatePassword(username, newPassword);
+    req.session.password = newPassword; // Uppdatera sessionens användarnamn
+    res.redirect('/users'); // Omdirigera till användarens sida efter ändring av användarnamn
+  } catch (error) {
+    console.error('Fel vid ändring av användarnamn:', error);
+    res.status(500).send('Serverfel vid ändring av användarnamn');
+  }
 });
 
 const PORT = 3000;
