@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <title>{{title}}</title>
+</head>
+
+<body>
+    <h1>{{title}}</h1>
+    <h2>Skapa en kommentar</h2>
+    <form action="/threads/{{thread.id}}/comments" method="POST">
+        <div>
+            <label for="comment">Kommentar:</label>
+            <textarea id="comment" name="comment" required></textarea>
+        </div>
+        <button type="submit">Skicka</button>
+    </form>
+
+    <h2>Tidigare kommentarer</h2>
+    {{#if comments.length}}
+    <ul>
+        {{#each comments}}
+        <li>{{this.username}}: {{this.comment}} <small>({{this.created_at}})</small></li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>Inga kommentarer att visa</p>
+    {{/if}}
+    <a href="/threads">Tillbaka till trådlistan</a>
+</body>
+
+</html>
