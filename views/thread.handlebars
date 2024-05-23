@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="sv">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Threads</title>
+</head>
+
+<body>
+    <h1>Skapa en thread</h1>
+    <form action="/threads" method="POST">
+        <div>
+            <label for="title">Titel:</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+        <button type="submit">Skicka</button>
+    </form>
+
+    <h3>Tidigare threads</h3>
+    {{#if threads.length}}
+    <ul>
+        {{#each threads}}
+        <li>
+            <!-- Länk för att visa trådens kommentarer -->
+            <h2>Nummer {{this.id}} </h2>
+            <a href="/threads/{{this.id}}/comments">
+
+                {{this.title}}</a>
+            gjord av <strong>{{this.username}}</strong>
+            <small>({{this.created_at}})</small>
+        </li>
+        {{/each}}
+    </ul>
+    {{else}}
+    <p>Inga threads att visa</p>
+    {{/if}}
+    <a href="/users">Ditt konto</a>
+</body>
+
+</html>
