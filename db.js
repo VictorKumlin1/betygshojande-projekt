@@ -1,6 +1,6 @@
+// db.js
 const mysql = require('mysql');
 const bcrypt = require("bcrypt");
-
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -29,17 +29,37 @@ async function hashPassword(password) {
 
 async function addUser(username, password) {
     try {
+        const checkQuery = 'SELECT * FROM users WHERE username = ?';
+        const existingUser = await new Promise((resolve, reject) => {
+            connection.query(checkQuery, [username], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results.length > 0);
+                }
+            });
+        });
+
+        if (existingUser) {
+            throw new Error('Användarnamnet är redan taget.');
+        }
+
         const hashedPassword = await hashPassword(password);
         const query = 'INSERT INTO users (username, password) VALUES (?, ?)';
-        connection.query(query, [username, hashedPassword], (error, results, fields) => {
-            if (error) {
-                console.error('Fel vid tillägg av användare:', error);
-                return;
-            }
-            console.log('Användare tillagd i databasen');
+        await new Promise((resolve, reject) => {
+            connection.query(query, [username, hashedPassword], (error, results, fields) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results);
+                }
+            });
         });
+
+        console.log('Användare tillagd i databasen');
     } catch (error) {
         console.error('Fel vid tillägg av användare:', error);
+        throw error;
     }
 }
 
@@ -67,58 +87,116 @@ async function login(username, password) {
     });
 }
 
-async function addPost(username, content) {
+async function addComment(threadId, username, comment) {
+    const query = 'INSERT INTO comments (username, postId, comment) VALUES (?, ?, ?)';
     return new Promise((resolve, reject) => {
-        const query = 'INSERT INTO posts (username, content) VALUES (?, ?)';
-        connection.query(query, [username, content], (error, results, fields) => {
+        connection.query(query, [username, threadId, comment], (error, results) => {
             if (error) {
-                console.error('Fel vid tillägg av inlägg:', error);
-                reject(new Error('Fel vid tillägg av inlägg: ' + error.message));
-                return;
+                reject(error);
+            } else {
+                resolve(results);
             }
-            resolve({ success: true, postId: results.insertId });
         });
     });
 }
 
-async function getPosts() {
+async function getCommentsByUser(username) {
+    const query = 'SELECT * FROM comments WHERE username = ? ORDER BY created_at DESC';
     return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM posts ORDER BY time DESC';
-        connection.query(query, (error, results) => {
+        connection.query(query, [username], (error, results) => {
             if (error) {
-                console.error('Fel vid hämtning av inlägg:', error);
-                reject(new Error('Fel vid hämtning av inlägg: ' + error.message));
-                return;
+                reject(error);
+            } else {
+                resolve(results);
             }
-            resolve(results);
         });
     });
 }
-async function getPostsByUser(username) {
+
+
+async function addThread(username, title) {
+    const query = 'INSERT INTO threads (username, title) VALUES (?, ?)';
     return new Promise((resolve, reject) => {
-        const query = 'SELECT * FROM posts WHERE username = ? ORDER BY time DESC';
-        connection.query(query, [username], (error, results) => {
+        connection.query(query, [username, title], (error, results) => {
             if (error) {
-                console.error('Fel vid hämtning av användarens inlägg:', error);
-                reject(new Error('Fel vid hämtning av användarens inlägg: ' + error.message));
-                return;
+                reject(error);
+            } else {
+                resolve(results);
             }
-            resolve(results);
+        });
+    });
+}
+
+async function getThreads() {
+    const query = 'SELECT * FROM threads ORDER BY created_at DESC';
+    return new Promise((resolve, reject) => {
+        connection.query(query, (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+async function getThreadById(threadId) {
+    const query = 'SELECT * FROM threads WHERE id = ?';
+    return new Promise((resolve, reject) => {
+        connection.query(query, [threadId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results[0]);
+            }
+        });
+    });
+}
+
+async function getCommentsByThread(threadId) {
+    const query = 'SELECT * FROM comments WHERE postId = ? ORDER BY created_at ';
+    return new Promise((resolve, reject) => {
+        connection.query(query, [threadId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
         });
     });
 }
 async function updateUsername(oldUsername, newUsername) {
-    return new Promise((resolve, reject) => {
-        const query = 'UPDATE users SET username = ? WHERE username = ?';
-        connection.query(query, [newUsername, oldUsername], (error, results) => {
-            if (error) {
-                console.error('Fel vid uppdatering av användarnamn:', error);
-                reject(new Error('Fel vid uppdatering av användarnamn: ' + error.message));
-                return;
-            }
-            resolve(results);
+    try {
+        const checkQuery = 'SELECT * FROM users WHERE username = ?';
+        const existingUser = await new Promise((resolve, reject) => {
+            connection.query(checkQuery, [newUsername], (error, results) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(results.length > 0);
+                }
+            });
         });
-    });
+
+        if (existingUser) {
+            throw new Error('Användarnamnet är redan taget.');
+        }
+
+        return new Promise((resolve, reject) => {
+            const query = 'UPDATE users SET username = ? WHERE username = ?';
+            connection.query(query, [newUsername, oldUsername], (error, results) => {
+                if (error) {
+                    console.error('Fel vid uppdatering av användarnamn:', error);
+                    reject(new Error('Fel vid uppdatering av användarnamn: ' + error.message));
+                    return;
+                }
+                resolve(results);
+            });
+        });
+    } catch (error) {
+        console.error('Fel vid uppdatering av användarnamn:', error);
+        throw error;
+    }
 }
 
 async function updatePassword(username, newPassword) {
@@ -140,12 +218,19 @@ async function updatePassword(username, newPassword) {
         throw new Error('Fel vid hashning av lösenord: ' + error.message);
     }
 }
+
+
+
 module.exports = {
     addUser,
     login,
-    addPost,
-    getPosts,
-    getPostsByUser,
+    addThread,
+    getThreads,
+    getThreadById,
+    addComment,
+    getCommentsByUser,
+    getCommentsByThread,
     updateUsername,
     updatePassword
+
 };
