@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Värd: 127.0.0.1
--- Tid vid skapande: 23 maj 2024 kl 22:23
+-- Tid vid skapande: 26 maj 2024 kl 17:12
 -- Serverversion: 10.4.32-MariaDB
 -- PHP-version: 8.2.12
 
@@ -32,25 +32,38 @@ CREATE TABLE `comments` (
   `username` varchar(255) DEFAULT NULL,
   `postId` int(11) NOT NULL,
   `comment` varchar(500) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `userId` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumpning av Data i tabell `comments`
 --
 
-INSERT INTO `comments` (`id`, `username`, `postId`, `comment`, `created_at`) VALUES
-(4, 'testo', 10, 'hej', '2024-05-23 14:32:19'),
-(5, 'testo', 6, 'meow', '2024-05-23 14:32:29'),
-(6, 'testo', 11, 'hejsan', '2024-05-23 14:50:12'),
-(7, 'testo', 11, 'sadlsa', '2024-05-23 14:50:15'),
-(9, 'testo', 10, 'hej', '2024-05-23 14:59:27'),
-(10, 'testo', 12, 'hej här är en kommentar i thread 12', '2024-05-23 15:11:09'),
-(11, 'testo', 12, 'en till', '2024-05-23 15:11:12'),
-(12, 'nyttig man', 3, 'hej', '2024-05-23 15:14:06'),
-(13, 'meow', 12, 'meow', '2024-05-23 15:14:33'),
-(14, 'mjau2', 13, 'örskis', '2024-05-23 19:27:10'),
-(22, 'martin loman', 16, 'Victor förtjänar ett A, punkt slut', '2024-05-23 19:59:14');
+INSERT INTO `comments` (`id`, `username`, `postId`, `comment`, `created_at`, `userId`) VALUES
+(5, '0', 6, 'meow', '2024-05-23 14:32:29', NULL),
+(6, '0', 11, 'hejsan', '2024-05-23 14:50:12', NULL),
+(23, NULL, 17, 'hej', '2024-05-26 10:19:34', NULL),
+(24, '0', 18, 'hej', '2024-05-26 10:22:07', NULL),
+(25, '0', 18, 'he', '2024-05-26 10:32:53', NULL),
+(26, '0', 18, 'asdjosadj', '2024-05-26 10:35:17', NULL),
+(27, '0', 19, 'hej', '2024-05-26 10:37:48', NULL),
+(28, 'hejsan', 20, 'hej', '2024-05-26 10:53:04', NULL),
+(29, 'hejsan', 20, 'asdi', '2024-05-26 10:53:58', NULL),
+(30, 'ashdiosajdoasphf+sapjfp', 21, 'lolis', '2024-05-26 10:56:57', NULL),
+(31, 'ashdiosajdoasphf+sapjfp', 19, 'sadi', '2024-05-26 10:57:03', NULL),
+(32, 'ashdiosajdoasphf+sapjfp', 19, 'asdk', '2024-05-26 10:57:10', NULL),
+(33, NULL, 22, 'lol', '2024-05-26 11:44:24', 0),
+(34, NULL, 20, 'asdisado', '2024-05-26 11:44:55', 0),
+(35, NULL, 23, 'cp', '2024-05-26 11:47:01', 0),
+(36, NULL, 3, 'aisjdoa', '2024-05-26 11:54:16', 8),
+(37, NULL, 26, 'asdoj', '2024-05-26 11:54:45', 8),
+(38, NULL, 28, 'nice', '2024-05-26 12:27:39', 16),
+(39, NULL, 28, 'negativ', '2024-05-26 14:02:34', 19),
+(40, NULL, 28, 'noice', '2024-05-26 14:02:38', 19),
+(41, NULL, 28, 'hej', '2024-05-26 14:07:05', 22),
+(45, NULL, 0, '28', '2024-05-26 14:54:16', 41),
+(46, NULL, 0, '28', '2024-05-26 14:54:18', 41);
 
 --
 -- Index för dumpade tabeller
@@ -70,7 +83,7 @@ ALTER TABLE `comments`
 -- AUTO_INCREMENT för tabell `comments`
 --
 ALTER TABLE `comments`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=53;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
