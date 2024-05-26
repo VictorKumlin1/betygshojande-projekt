@@ -1,4 +1,3 @@
-// db.js
 const mysql = require('mysql');
 const bcrypt = require("bcrypt");
 
@@ -46,7 +45,7 @@ async function addUser(username, password) {
 
         const hashedPassword = await hashPassword(password);
         const query = 'INSERT INTO users (username, password) VALUES (?, ?)';
-        await new Promise((resolve, reject) => {
+        const result = await new Promise((resolve, reject) => {
             connection.query(query, [username, hashedPassword], (error, results, fields) => {
                 if (error) {
                     reject(error);
@@ -57,12 +56,12 @@ async function addUser(username, password) {
         });
 
         console.log('Användare tillagd i databasen');
+        return result.insertId;
     } catch (error) {
         console.error('Fel vid tillägg av användare:', error);
         throw error;
     }
 }
-
 async function login(username, password) {
     return new Promise((resolve, reject) => {
         const sql = "SELECT * FROM users WHERE username = ?";
@@ -75,7 +74,7 @@ async function login(username, password) {
                 const user = results[0];
                 let passwordMatch = false;
 
-                if (password === user.password || (await bcrypt.compare(password, user.password))) {
+                if ((await bcrypt.compare(password, user.password))) {
                     passwordMatch = true;
                 }
 
@@ -87,10 +86,11 @@ async function login(username, password) {
     });
 }
 
-async function addComment(threadId, username, comment) {
-    const query = 'INSERT INTO comments (username, postId, comment) VALUES (?, ?, ?)';
+
+async function addComment(threadId, userId, username, comment) {
+    const query = 'INSERT INTO comments (postId, userId, username, comment) VALUES (?, ?, ?, ?)';
     return new Promise((resolve, reject) => {
-        connection.query(query, [username, threadId, comment], (error, results) => {
+        connection.query(query, [threadId, userId, username, comment], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -100,10 +100,10 @@ async function addComment(threadId, username, comment) {
     });
 }
 
-async function getCommentsByUser(username) {
-    const query = 'SELECT * FROM comments WHERE username = ? ORDER BY created_at DESC';
+async function getCommentsByUser(userId) {
+    const query = 'SELECT * FROM comments WHERE userId = ? ORDER BY created_at DESC';
     return new Promise((resolve, reject) => {
-        connection.query(query, [username], (error, results) => {
+        connection.query(query, [userId], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -112,12 +112,10 @@ async function getCommentsByUser(username) {
         });
     });
 }
-
-
-async function addThread(username, title) {
-    const query = 'INSERT INTO threads (username, title) VALUES (?, ?)';
+async function addThread(username, userId, title) {
+    const query = 'INSERT INTO threads (username, title, userId) VALUES (?, ?, ?)';
     return new Promise((resolve, reject) => {
-        connection.query(query, [username, title], (error, results) => {
+        connection.query(query, [username, title, userId], (error, results) => {
             if (error) {
                 reject(error);
             } else {
@@ -154,7 +152,7 @@ async function getThreadById(threadId) {
 }
 
 async function getCommentsByThread(threadId) {
-    const query = 'SELECT * FROM comments WHERE postId = ? ORDER BY created_at ';
+    const query = 'SELECT * FROM comments WHERE postId = ? ORDER BY created_at';
     return new Promise((resolve, reject) => {
         connection.query(query, [threadId], (error, results) => {
             if (error) {
@@ -165,6 +163,7 @@ async function getCommentsByThread(threadId) {
         });
     });
 }
+
 async function updateUsername(oldUsername, newUsername) {
     try {
         const checkQuery = 'SELECT * FROM users WHERE username = ?';
@@ -177,11 +176,9 @@ async function updateUsername(oldUsername, newUsername) {
                 }
             });
         });
-
         if (existingUser) {
             throw new Error('Användarnamnet är redan taget.');
         }
-
         return new Promise((resolve, reject) => {
             const query = 'UPDATE users SET username = ? WHERE username = ?';
             connection.query(query, [newUsername, oldUsername], (error, results) => {
@@ -219,6 +216,20 @@ async function updatePassword(username, newPassword) {
     }
 }
 
+async function deleteComment(commentId) {
+    const query = 'DELETE FROM comments WHERE id = ?';
+    return new Promise((resolve, reject) => {
+        connection.query(query, [commentId], (error, results) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve(results);
+            }
+        });
+    });
+}
+
+
 
 
 module.exports = {
@@ -231,6 +242,6 @@ module.exports = {
     getCommentsByUser,
     getCommentsByThread,
     updateUsername,
-    updatePassword
-
+    updatePassword,
+    deleteComment
 };
