@@ -32,14 +32,18 @@
     <ul>
         {{#each comments}}
         <li>
-            <strong>{{this.username}}</strong>: {{this.comment}} <br>
+            {{this.comment}} <br>
             <small>Postad i thread:{{this.postId}} {{this.created_at}}</small>
+            <form action="/delete-comment/{{this.id}}" method="POST">
+                <button type="submit">Ta bort</button>
+            </form>
         </li>
         {{/each}}
     </ul>
     {{else}}
     <p>Du har inte postat något.</p>
     {{/if}}
+
     <a href="/threads">Tillbaka till inlägg</a>
 
     <form action="/logout" method="POST" style="margin-top: 20px;">
