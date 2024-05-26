@@ -17,18 +17,19 @@ app.use(session({
   saveUninitialized: false,
 }));
 
-// Middleware-funktion för att kontrollera inloggning
 function requireLogin(req, res, next) {
-  if (!req.session.username) {
+  if (!req.session.userId) {
     return res.redirect('/');
   }
   next();
 }
 
 app.get('/', (req, res) => {
-  if (req.session.username) {
-    return res.redirect('/threads');
+  if (req.session.userId) {
+    return res.redirect('/');
   }
+
+
   res.render('home', { title: 'Välkommen' });
 });
 
@@ -39,7 +40,8 @@ app.get('/register', (req, res) => {
 app.post('/register', async (req, res) => {
   const { username, password } = req.body;
   try {
-    await databas.addUser(username, password);
+    const userId = await databas.addUser(username, password);
+    req.session.userId = userId;
     req.session.username = username;
     res.redirect('/threads');
   } catch (error) {
@@ -50,6 +52,7 @@ app.post('/register', async (req, res) => {
     res.render('register', { title: 'Registrering', error: errorMessage });
   }
 });
+
 
 app.get('/login', (req, res) => {
   res.render('login', { title: 'Logga in' });
@@ -62,6 +65,7 @@ app.post('/login', async (req, res) => {
     const loginResult = await databas.login(username, password);
     if (loginResult.success) {
       console.log('Inloggning lyckades för användare:', username);
+      req.session.userId = loginResult.user.userId;
       req.session.username = loginResult.user.username;
       console.log('Session efter inloggning:', req.session);
       res.redirect('/threads');
@@ -75,45 +79,20 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/posts', async (req, res) => {
-  try {
-    const posts = await databas.getPosts();
-    res.render('posts', { title: 'Inlägg', posts });
-  } catch (error) {
-    console.error('Fel vid hämtning av inlägg:', error);
-    res.status(500).send('Serverfel vid hämtning av inlägg');
-  }
-});
 
-app.post('/posts', requireLogin, (req, res) => {
-  const { content } = req.body;
-  console.log('Session innan post skapande:', req.session);
-  const username = req.session.username;
-  if (!username) {
-    return res.status(401).send('Du måste vara inloggad för att skapa ett inlägg.');
-  }
-  console.log(`Skapar inlägg för användare: ${username}, Innehåll: ${content}`);
-  databas.addPost(username, content)
-    .then(() => {
-      res.redirect('/posts');
-    })
-    .catch(error => {
-      console.error('Fel vid tillägg av inlägg:', error);
-      res.status(500).send('Serverfel vid tillägg av inlägg');
-    });
-});
 
 app.get('/users', requireLogin, async (req, res) => {
-  const username = req.session.username;
-
+  const userId = req.session.userId;
   try {
-    const userComments = await databas.getCommentsByUser(username);
-    res.render('users', { title: 'Ditt konto', username, comments: userComments });
+    const userComments = await databas.getCommentsByUser(userId);
+    const username = req.session.username;
+    res.render('users', { title: 'Ditt konto', username: username, comments: userComments });
   } catch (error) {
     console.error('Fel vid hämtning av användarens kommentarer:', error);
     res.status(500).send('Serverfel vid hämtning av användarens kommentarer');
   }
 });
+
 
 app.post('/change-username', requireLogin, async (req, res) => {
   const { newUsername } = req.body;
@@ -136,11 +115,8 @@ app.post('/change-username', requireLogin, async (req, res) => {
     }
   }
 });
-
 app.post('/change-password', requireLogin, async (req, res) => {
   const { newPassword } = req.body;
-  console.log('Nytt lösenord:', newPassword);
-
   const username = req.session.username;
   try {
     await databas.updatePassword(username, newPassword);
@@ -163,10 +139,11 @@ app.get('/threads', requireLogin, async (req, res) => {
 
 app.post('/threads', requireLogin, async (req, res) => {
   const { title } = req.body;
+  const userId = req.session.userId;
   const username = req.session.username;
 
   try {
-    await databas.addThread(username, title);
+    await databas.addThread(username, userId, title);
     res.redirect('/threads');
   } catch (error) {
     res.status(500).send('Serverfel vid tillägg av thread');
@@ -177,7 +154,7 @@ app.get('/threads/:id', requireLogin, async (req, res) => {
   const threadId = req.params.id;
   try {
     const thread = await databas.getThreadById(threadId);
-    const posts = await databas.getCommentsByComments(threadId);
+    const posts = await databas.getCommentsByThread(threadId);
     res.render('thread', { title: thread.title, thread, posts });
   } catch (error) {
     res.status(500).send('Serverfel vid hämtning av thread');
@@ -198,14 +175,28 @@ app.get('/threads/:id/comments', requireLogin, async (req, res) => {
 app.post('/threads/:id/comments', requireLogin, async (req, res) => {
   const threadId = req.params.id;
   const { comment } = req.body;
+  const userId = req.session.userId;
   const username = req.session.username;
+
   try {
-    await databas.addComment(threadId, username, comment);
+    await databas.addComment(threadId, userId, username, comment);
     res.redirect(`/threads/${threadId}/comments`);
   } catch (error) {
     res.status(500).send('Serverfel vid tillägg av kommentar');
   }
 });
+
+app.post('/delete-comment/:id', requireLogin, async (req, res) => {
+  const commentId = req.params.id;
+  try {
+    await databas.deleteComment(commentId);
+    res.redirect('/users');
+  } catch (error) {
+    console.error('Fel vid borttagning av kommentar:', error);
+    res.status(500).send('Serverfel vid borttagning av kommentar');
+  }
+});
+
 
 app.post('/logout', (req, res) => {
   req.session.destroy(err => {
